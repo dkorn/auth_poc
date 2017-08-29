@@ -10,25 +10,26 @@ acl = new acl(new acl.memoryBackend());
 const permissions = {GET: 'read', POST: 'create', PUT: 'update', DELETE: 'delete'};
 
 const mockUsersdDb = [
-  {userId: 'adminUser', password: 'secret', role: 'Admin', userApiToken: 'aaa'},
-  {userId: 'regularUser', password: 'secret', role: 'User', userApiToken: 'bbb'}
+  {id: 'administrator', password: 'secret', role: 'Admin', userApiToken: 'aaa'},
+  {id: 'operator', password: 'secret', role: 'User', userApiToken: 'bbb'}
 ];
 
-acl.addUserRoles('adminUser', 'Admin');
-acl.addUserRoles('regularUser', 'User');
+acl.addUserRoles('administrator', 'Admin');
+acl.addUserRoles('operator', 'User');
 acl.allow([
   {
     roles: ['Admin'],
     allows: [
-      { resources: 'incidents', permissions: '*' },
-      { resources: 'users', permissions: '*' }
+      { resources: ['incidents', 'incidents/1', 'incidents/2', 'incidents/3',], permissions: ['read', 'create', 'edit', 'delete'] },
+      { resources: ['users'], permissions:['read', 'create', 'edit', 'delete'] }
     ]
   },
   {
     roles: ['User'],
     allows: [
-      { resources: 'incidents', permissions: 'read' },
-      { resources: 'users', permissions: 'read' }
+      { resources: ['incidents', 'incidents/1'], permissions: 'read' },
+      { resources: ['incidents/2'], permissions: ['read', 'create', 'edit', 'delete'] },
+      { resources: ['users'], permissions: 'read' }
     ]
   }
 ]);
@@ -62,40 +63,61 @@ function isAllowed(userId, resource, permission) {
   return acl.isAllowed(userId, resource, permission);
 }
 
-function authorizeAction(req) {
-  const user = findUserByToken(req.headers['authorization']);
-  const method = req.headers['x-original-method'];
-  const resource = req.params.resource;
-  let permission;
+function authorizeAction(req, user, method) {
+  const permission = permissions[method];
+  let resource = req.params.resource;
   if (req.params.id) {
-    const resourceId = req.params.id;
+    resource = resource + '/' + req.params.id;
   }
-  if (method == 'GET') {
-    permission = 'read';
-  } else {
-    permission = permissions[method];
-  }
-  return isAllowed(user.userId, resource, permission).then((authorized) => authorized);
+  return isAllowed(user.id, resource, permission).then((authorized) => authorized);
 }
 
-function generateToken(req) {
-  const token = req.headers['authorization'];
-  const userRole = getUserRole(token);
-  const jwtToken = jwt.sign({ role: userRole }, 'shhhhh');
+function generateToken(user, resources) {
+  let jwtToken;
+  if (resources) {
+    jwtToken = jwt.sign({ user: user, resources: resources }, 'shhhhh');
+  } else {
+    jwtToken = jwt.sign({ user: user }, 'shhhhh');
+  }
   return jwtToken;
+}
+
+function getResourcesIds(resources, resourceCollection) {
+  let idsList = [];
+  for (resource in resources) {
+    if (resource.indexOf(resourceCollection + '/') === 0 ) {
+      idsList.push(resource.split(resourceCollection + '/')[1]);
+    }
+  }
+  return idsList;
 }
 
 function authorization(req, res, next) {
   console.log('Authorizing...');
-  authorizeAction(req).then((authorized) => {
+  const token = req.headers['authorization'];
+  const user = findUserByToken(token);
+  const method = req.headers['x-original-method'];
+  let resourcesIds = [];
+  let jwtToken;
+  authorizeAction(req, user, method).then((authorized) => {
     if (!authorized) {
       console.log('Not Authorized!')
       return res.status(403).end();
     }
     console.log('Authorized by auth service!');
-    const jwtToken = generateToken(req); 
-    res.header('token', jwtToken);
-    res.status(200).end();
+    if (method !== 'GET' || req.params.id) {
+      jwtToken = generateToken(user);
+      res.header('token', jwtToken);
+      res.status(200).end();
+    } else {
+      // read request for the entire resource collection, requires permissions per resource
+      acl.whatResources(user.role, (err, resources) => {
+        resourcesIds = getResourcesIds(resources, req.params.resource);
+        jwtToken = generateToken(user, resourcesIds);
+        res.header('token', jwtToken);
+        return res.status(200).end();
+      });
+    }
   });
 }
 
