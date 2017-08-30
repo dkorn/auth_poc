@@ -22,19 +22,19 @@ micro services:
 node index.js
 ```
 
-NGINX:
-```shell
-vagrant ssh
-sudo /usr/local/nginx/sbin/nginx
-```
-
 Or even better, with [nodemon](https://github.com/remy/nodemon)
 ```shell
 npm install -g nodemon
 nodemon index.js
 ```
 
-### Ports used:
+NGINX:
+```shell
+vagrant ssh
+sudo /usr/local/nginx/sbin/nginx
+```
+
+## Ports used
 
 * micro service       1447
 * auth service        1448
