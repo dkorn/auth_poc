@@ -35,9 +35,15 @@ sudo /usr/local/nginx/sbin/nginx
 * auth service        1448
 * NGINX reverse proxy 1449
 
-## Usage Example (using http)
+## Usage Example (using [HTTPie](https://httpie.org/))
 
 ```shell
 http localhost:1449/api/incidents Authorization:aaa
 http localhost:1449/api/incidents/1 Authorization:bbb
+```
+
+## Interactive Demo
+Running
+```shell
+./demo.sh
 ```
