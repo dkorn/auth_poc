@@ -8,11 +8,6 @@ npm install
 
 cd nginx
 vagrant up
-vagrant ssh
-sudo chown vagrant:vagrant /usr/local/nginx/conf/
-logout
-vagrant plugin install vagrant-scp
-vagrant scp nginx.conf default:/usr/local/nginx/conf/nginx.conf
 ```
 
 ## Running
