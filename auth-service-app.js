@@ -20,7 +20,8 @@ acl.allow([
   {
     roles: ['Admin'],
     allows: [
-      { resources: ['incidents', 'incidents/1', 'incidents/2', 'incidents/3',], permissions: ['read', 'create', 'edit', 'delete'] },
+      { resources: ['incidents', 'incidents/1', 'incidents/2', 'incidents/3'], permissions: ['read', 'create', 'edit', 'delete'] },
+      { resources: ['incidents/1/entities', 'incidents/1/entities/1', 'incidents/1/entities/2', 'incidents/1/entities/3'], permissions: ['read', 'create', 'edit', 'delete'] },
       { resources: ['users'], permissions:['read', 'create', 'edit', 'delete'] }
     ]
   },
@@ -65,10 +66,7 @@ function isAllowed(userId, resource, permission) {
 
 function authorizeAction(req, user, method) {
   const permission = permissions[method];
-  let resource = req.params.resource;
-  if (req.params.id) {
-    resource = resource + '/' + req.params.id;
-  }
+  const resource = req.originalUrl.replace('/api/', '');
   return isAllowed(user.id, resource, permission).then((authorized) => authorized);
 }
 
@@ -82,11 +80,19 @@ function generateToken(user, resources) {
   return jwtToken;
 }
 
-function getResourcesIds(resources, resourceCollection) {
+function getResourcesIds(resources, resourceCollection, collectionType) {
   let idsList = [];
+  const collection = resourceCollection.indexOf('/', resourceCollection.length - 1) !== -1 ? resourceCollection : resourceCollection + '/';
   for (resource in resources) {
-    if (resource.indexOf(resourceCollection + '/') === 0 ) {
-      idsList.push(resource.split(resourceCollection + '/')[1]);
+    if (resource.indexOf(collection) === 0 ) {
+      if (collectionType == 'subresource') {
+        idsList.push(resource.split(collection)[1]);
+      } else {
+        id = resource.split('/')[1];
+        if (idsList.indexOf(id) == -1) {
+          idsList.push(resource.split('/')[1]);
+        }
+      }
     }
   }
   return idsList;
@@ -105,22 +111,40 @@ function authorization(req, res, next) {
       return res.status(403).end();
     }
     console.log('Authorized by auth service!');
-    if (method !== 'GET' || req.params.id) {
-      jwtToken = generateToken(user);
-      res.header('token', jwtToken);
-      res.status(200).end();
-    } else {
-      // read request for the entire resource collection, requires permissions per resource
-      acl.whatResources(user.role, (err, resources) => {
-        resourcesIds = getResourcesIds(resources, req.params.resource);
-        jwtToken = generateToken(user, resourcesIds);
+    if (method == 'GET') {
+      // read request for the entire subresource collection, requires permissions per subresource
+      if (req.params.subresource && !req.params.subresourceId) {
+        acl.whatResources(user.role, (err, resources) => {
+          const subresourceCollection = req.originalUrl.replace('/api/', '');
+          subresourcesIds = getResourcesIds(resources, subresourceCollection, 'subresource');
+          jwtToken = generateToken(user, subresourcesIds);
+          res.header('token', jwtToken);
+          return res.status(200).end();
+        });
+      } else if (!req.params.id) {
+        // read request for the entire resource collection, requires permissions per resource
+        acl.whatResources(user.role, (err, resources) => {
+          resourcesIds = getResourcesIds(resources, req.params.resource, 'resource');
+          jwtToken = generateToken(user, resourcesIds);
+          res.header('token', jwtToken);
+          return res.status(200).end();
+        });
+      } else {
+        // read request for a specific resource or subresource
+        jwtToken = generateToken(user);
         res.header('token', jwtToken);
         return res.status(200).end();
-      });
+      }
+    } else {
+      // all other requests
+      jwtToken = generateToken(user);
+      res.header('token', jwtToken);
+      return res.status(200).end();
     }
   });
 }
 
+app.use('/api/:resource/:id/:subresource/:subresourceId', authentication, authorization);
 app.use('/api/:resource/:id/:subresource', authentication, authorization);
 app.use('/api/:resource/:id', authentication, authorization);
 app.use('/api/:resource', authentication, authorization);

@@ -12,14 +12,14 @@ RESET='\033[0m' # No Color
 
 echo "\n${PURPLE}Before you start palyin'${RESET}\n"
 echo "Available user API tokens: ${YELLOW}'aaa', 'bbb'${RESET}"
-echo "Available resources: ${BLUE}'incidents' {1, 2, 3}, 'users'${RESET}\n"
+echo "Available resources: ${BLUE}'incidents' (incidents/1, incidents/2, incidents/3), 'entities' (entities/1, entities/2, entities/3) 'users'${RESET}\n"
 
 while [ 1 ]
 do
   read -p "$(echo Enter $YELLOW"User API Token"${RESET}) `echo $'\n> '`" userApiToken
   echo "\n"
 
-  read -p "$(echo Enter $BLUE"resource"${RESET} query in the following format: '<collection>/<resource-id>') `echo $'\n> '`" resource
+  read -p "$(echo Enter $BLUE"resource"${RESET} query in the following format: '<collection>/<resource-id>/<subresource-collection>/<subresource-id>') `echo $'\n> '`" resource
   echo "\n"
 
   echo "Generated GET request for resource ${BLUE}$resource ${RESET}with user API token ${YELLOW}$userApiToken ${RESET}:"
