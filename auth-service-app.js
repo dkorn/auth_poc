@@ -22,6 +22,7 @@ acl.allow([
     allows: [
       { resources: ['incidents', 'incidents/1', 'incidents/2', 'incidents/3'], permissions: ['read', 'create', 'edit', 'delete'] },
       { resources: ['incidents/1/entities', 'incidents/1/entities/1', 'incidents/1/entities/2', 'incidents/1/entities/3'], permissions: ['read', 'create', 'edit', 'delete'] },
+      { resources: ['entities', 'entities/1', 'entities/2', 'entities/3'], permissions: ['read', 'create', 'edit', 'delete'] },
       { resources: ['users'], permissions:['read', 'create', 'edit', 'delete'] }
     ]
   },
@@ -29,7 +30,9 @@ acl.allow([
     roles: ['User'],
     allows: [
       { resources: ['incidents', 'incidents/1'], permissions: 'read' },
+      { resources: ['incidents/1/entities', 'incidents/1/entities/1', 'incidents/1/entities/2', 'incidents/1/entities/3'], permissions: ['read', 'create', 'edit', 'delete'] },
       { resources: ['incidents/2'], permissions: ['read', 'create', 'edit', 'delete'] },
+      { resources: ['entities', 'entities/1', 'entities/2', 'entities/3'], permissions: ['read', 'create', 'edit', 'delete'] },
       { resources: ['users'], permissions: 'read' }
     ]
   }

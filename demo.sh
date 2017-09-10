@@ -12,7 +12,7 @@ RESET='\033[0m' # No Color
 
 echo "\n${PURPLE}Before you start palyin'${RESET}\n"
 echo "Available user API tokens: ${YELLOW}'aaa', 'bbb'${RESET}"
-echo "Available resources: ${BLUE}'incidents' (incidents/1, incidents/2, incidents/3), 'entities' (entities/1, entities/2, entities/3) 'users'${RESET}\n"
+echo "Available resources: ${BLUE}'incidents' (incidents/{1, 2, 3}), 'entities' (incidents/1/entities/{1, 2, 3}) 'users'${RESET}\n"
 
 while [ 1 ]
 do
@@ -28,7 +28,7 @@ do
   while true; do
     read -p "To submit request hit $(echo $GREEN'ENTER'$RESET) key, to change the request params hit $(echo $RED'f'$RESET) `echo $'\n> '`" -s -n 1 key
     if [[ $key = "" ]]; then
-      echo "\nSubmiting request!\n"
+      echo "\nSubmitting request!\n"
       http localhost:1449/api/$resource Authorization:$userApiToken
       echo "\n"
       break
